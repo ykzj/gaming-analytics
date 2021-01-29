@@ -156,7 +156,7 @@ if __name__ == '__main__':
 	parser.add_argument('--endTime', help='Example: 2022-01-01 00:00:00', required=False)
 	parser.add_argument('--project', help='your project id, to create pubsub topic', required=True)
 	parser.add_argument('--topic', help='public topic to send events', required=True)
-	parser.add_argument('--interval', help='interval (in seconds) between events', required=False, type=int, default=1)
+	parser.add_argument('--interval', help='interval (in seconds) between events', required=False, default=1)
 
 	logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.INFO)
 	args = parser.parse_args()
@@ -187,4 +187,4 @@ if __name__ == '__main__':
 		logging.info('Sending events to {}: {}'.format(topic_path, event_data))
 		future = publisher.publish(topic_path, event_data)
 		logging.info('Result: {}'.format(future.result()))
-		time.sleep(args.interval)
+		time.sleep(float(args.interval))
