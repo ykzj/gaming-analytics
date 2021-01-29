@@ -1,0 +1,2 @@
+#!/bin/bash
+docker run --rm -v /Users/lxd/lxd-project.json:/app/key.json -e "GOOGLE_APPLICATION_CREDENTIALS=/app/key.json" -e "project=lxd-project" -e "topic=gaming-analytics-topic" -e "interval=5" -it simulator:0.2

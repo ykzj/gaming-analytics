@@ -1,0 +1,36 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: simulator-deployment
+  labels:
+    app: simulator
+    version: "0.2"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: simulator
+      version: "0.2"
+  template:
+    metadata:
+      labels:
+        app: simulator
+        version: "0.2"
+    spec:
+      containers:
+      - name: simulator
+        image: gcr.io/lxd-project/simulator:0.2
+        env:
+        - name: project
+          value: lxd-project
+        - name: topic
+          value: gaming-analytics-topic
+        - name: interval
+          value: "1"
+        resources:
+          requests:
+            cpu: "100m"
+            memory: "100Mi"
+          limits:
+            cpu: "200m"
+            memory: "200Mi"
