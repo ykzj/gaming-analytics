@@ -1,0 +1,68 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gameserver-deployment
+  labels:
+    app: gameserver
+    version: "0.2"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: gameserver
+      version: "0.2"
+  template:
+    metadata:
+      labels:
+        app: gameserver
+        version: "0.2"
+    spec:
+      containers:
+      - name: gameserver
+        image: gcr.io/lxd-project/gameserver:0.2
+        volumeMounts:
+        - mountPath: /logs
+          name: log-volume
+        imagePullPolicy: Always
+        env:
+        - name: LOGDIR
+          value: /logs
+        - name: BACKUPS
+          value: "5"
+        - name: SIZE
+          value: "10485760"
+        - name: INTERVAL
+          value: "10"
+        - name: MY_NODE_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: spec.nodeName
+        - name: MY_POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        resources:
+          requests:
+            cpu: "50m"
+            memory: "100Mi"
+          limits:
+            cpu: "200m"
+            memory: "500Mi"
+      - name: fluent-bit
+        image: gcr.io/lxd-project/fluent-bit:1.6
+        volumeMounts:
+        - mountPath: /logs
+          name: log-volume
+        imagePullPolicy: Always
+        resources:
+          requests:
+            cpu: "50m"
+            memory: "100Mi"
+          limits:
+            cpu: "200m"
+            memory: "500Mi"
+      volumes:
+      - name: log-volume
+        hostPath:
+          path: /tmp/logs
+          type: DirectoryOrCreate
