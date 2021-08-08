@@ -33,7 +33,10 @@ adid = str(uuid.uuid4())
 uid = str(uuid.uuid4())
 
 def get_event_name():
-	return random.choice(['login', 'logout', 'purchase', 'level_up', 'click_ad'])
+	return random.choice(['login', 'logout', 'purchase', 'level_up', 'click_ad', 'first_install'])
+
+def get_install_medium():
+	return random.choice(['Google', 'Facebook', 'Baidu', 'Tencent', 'Bytedance', 'Other'])
 
 def get_mobile_brand(device_category):
 	if(device_category == 'mobile'):
@@ -137,6 +140,21 @@ def get_event_parms(event_name):
 				'key': 'ad_revenue',
 				'value': {
 					'float_value': round(random.random(), 3)
+				}
+			}
+		]
+	elif(event_name == 'first_install'):
+		parms = [
+			{
+				'key': 'install_date',
+				'value':{
+					'string_value': time.strftime('%Y-%m-%d')
+				}
+			},
+			{
+				'key': 'install_medium',
+				'value': {
+					'string_value': get_install_medium()
 				}
 			}
 		]
