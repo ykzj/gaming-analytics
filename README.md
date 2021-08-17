@@ -2,7 +2,7 @@
 </walkthrough-project-setup>
 
 # GCP游戏分析解决方案
-## 概述
+## 1. 概述
 常见的游戏分析系统架构如下图所示，一般会包含以下几个部分：
 1. 游戏客户端：采集游戏日志、打点信息后，以实时或非实时方式发送到采集模块
 2. 采集模块：认证游戏客户端，接收日志和打点信息，将接收到的数据存储到对应数据库或数据仓库
@@ -11,13 +11,13 @@
 
 ![](images/01.png)
 
-## GCP架构
+## 2. GCP架构
 为了演示如何在GCP进行游戏数据分析，设计了一个简单的架构用于展示如何从游戏客户端采集数据，如何将数据实时发送至服务端，如何实时存储和处理数据并进行可视化展现。
 ![](images/02.png)
 
 此架构包含两类数据的采集和处理：用户事件的实时处理和日志的批量处理。
 
-#### 用户事件实时处理
+#### 2.1 用户事件实时处理
 
 用户登陆游戏、购买虚拟资产、充值等行为我们将其定义为`事件`,除上述通用行为外，我们还可为特定游戏定义特定的事件，如：用户升级、加入工会、获得装备等。如何定义游戏事件，请参考：[Google Analytics推荐事件](https://support.google.com/firebase/answer/9267735?hl=zh-Hans&ref_topic=6317484)  和 [GA推荐的游戏事件](https://support.google.com/firebase/answer/9267565?hl=zh-Hans)
 
@@ -27,23 +27,34 @@
 
 玩家事件发送到Cloud Pub/Sub之后，通过[Dataflow](https://cloud.google.com/dataflow) 作为消费者获取数据，进行ETL操作之后保存到[BigQuery](https://cloud.google.com/bigquery) 。整条处理采集和处理的管道(Pipeline)不需要游戏开发者部署服务器来安装应用，免去了运维负担。并且数据管道的处理能力可以根据玩家事件数据量的变化而弹性扩展，让游戏开发者按使用量付费。使用[Dataflow](https://cloud.google.com/dataflow) 而非Spark或Flink，因为前者能提供批流一体的能力，并且能对流式处理提供更好的时序支持。
 
-#### 服务器日志实时/批量处理
+#### 2.2 服务器日志实时/批量处理
 
 对于服务器产生的日志，可以实时处理，也可以批量处理。通过在服务器上“侧加载”一个日志收集的组件，如flume或[fluent-bit](https://fluentbit.io/) ,便可将服务器日志传输到[Cloud Logging](https://cloud.google.com/logging) 服务，然后将日志路由至其他服务进行处理。
 
-## 安装部署
+## 3. 安装部署
 本demo采用容器化技术，将用户事件模拟器和服务器模拟器都封装成为容器，并以K8S技术对容器进行编排。先将repo代码pull到本地
 
 ```bash
 git clone https://github.com/ykzj/gaming-analytics.git
 cd gaming-analytics
-export project_id=`gcloud config get-value project`
 ```
 
 repo中目录结构如下图:
 ![](images/03.png)
 
-### 用户事件模拟器
+如果在Cloud Shell中运行，可以通过以下命令打开交互式向导：
+
+```bash
+teachme README.md
+```
+
+首先，我们需要定义project_id这个环境变量，后面多处会用到，***重要***
+
+```bash
+export project_id=`gcloud config get-value project`
+```
+
+### 3.1 用户事件模拟器
 
 stream目录中包含用户事件模拟器及对应的yaml文件，部署之前先通过Dockerfile生成容器镜像
 
@@ -65,7 +76,7 @@ docker tag simulator gcr.io/${project_id}/somulator:0.3
 docker push gcr.io/${project_id}/somulator:0.3
 ```
 
-### 服务器日志模拟器
+### 3.2 服务器日志模拟器
 
 batch目录中包含服务器日志模拟器及对应的yaml文件，部署之前先通过Dockerfile生成容器镜像
 ```bash
@@ -89,7 +100,7 @@ docker push gcr.io/${project_id}/fluent-bit:1.8
 ```
 至此，用户事件模拟器和服务器日志模拟器的镜像制作完成。
 
-### 创建Google Kubernetes Engine集群
+### 3.3 创建Google Kubernetes Engine集群
 
 接下来创建一个[GKE](https://cloud.google.com/kubernetes-engine) 集群，用来运行用户事件模拟器和服务器日志模拟器。用户事件模拟器将模拟事件发送到Pub/Sub服务，服务器日志模拟机将日志发送到Cloud Logging服务，因此需要先创建一个服务账号，并授予Pub/Sub服务和Cloud Logging服务的权限。
 
@@ -117,29 +128,29 @@ gcloud beta container --project ${project_id} clusters create "gke-gaming-analyt
 
 等待几分钟，GKE集群创建好后，获取身份验证以便与集群交互：
 ```bash
-gcloud container clusters get-credentials gke-gaming-analytics-demo
+gcloud container clusters get-credentials gke-gaming-analytics-demo --zone=us-central1-c
 ```
 通过下列命令验证kubectl命令行能正常获取集群信息：
 ```bash
-kubectl get po
 kubectl get node
 ```
-### 创建Cloud Pub/Sub Topic
+### 3.4 创建Cloud Pub/Sub Topic
 在部署应用到GKE之前，还需要先创建一个Cloud Pub/Sub Topic用来接收用户事件模拟器的模拟事件：
 ```bash
 gcloud pubsub topics create gaming-analytics-topic
 ```
-### 部署应用到GKE
+### 3.5 部署应用到GKE
 接下来可以开始部署用户事件模拟器和服务器日志模拟器到GKE集群，注意：在部署前调整yaml文件配置以匹配project id、Pub/Sub topic等设置。
 ```bash
 cd ..
 kubectl create -f stream/simulator-deployment.yaml
 kubectl create -f batch/gameserver-deployment.yaml
+kubectl get po
 ```
 
 如果需要调整模拟器的数量，请修改yaml文件中的对应设置。
 
-### 创建BigQuery数据集
+### 3.6 创建BigQuery数据集
 
 通过bq命令行工具来创建一个数据集，用于存储用户事件和服务器日志：
 
@@ -160,7 +171,7 @@ bq mk \
   stream/event_table_schema.json
 ```
 
-### 创建Dataflow任务
+### 3.7 创建Dataflow任务
 
 Dataflow用于消费Pub/Sub数据后存入BigQuery，得益于Dataflow自带的Pub/Sub Topic to BigQuery任务模版，我们只需要从模版创建任务即可，不需要自己写代码来实现,只需要创建一个存储桶用于任务执行的临时存储。此任务的DAG如下图：
 ![](images/04.png)
@@ -175,16 +186,12 @@ gcloud dataflow jobs run job-gaming-analytics --gcs-location gs://dataflow-templ
 等待job创建完成后，通过bq命令行查询events表以获取结果
 ```bash
 bq query --use_legacy_sql=false \
-'SELECT
-  *
-FROM
-  gaming_analytics.events
-LIMIT 10'
+'SELECT * FROM gaming_analytics.events LIMIT 10'
 ```
 
 至此，用户事件模拟器生成的模拟事件已经经过流式处理，并且存储到BigQuery表里。
 
-### 存储服务器日志到BigQuery
+### 3.8 存储服务器日志到BigQuery
 
 服务器日志模拟器生成的模拟日志已经自动发送到Cloud Logging中，接下来我们创建一个sink:
 ```bash
@@ -195,19 +202,57 @@ bigquery.googleapis.com/projects/${project_id}/datasets/gaming_analytics \
 
 命令完成后，会在BigQuery的gaming_analytics数据集下自动创建一张表，用来存放服务器日志信息
 
-## 清理
+## 4. 清理
 
 为了避免产生额外的费用，实验完成后请删除实验过程中创建的资源：
+
+删除部署的用户事件模拟器和服务器日志模拟器：
+
 ```bash
 kubectl delete -f stream/simulator-deployment.yaml
 kubectl delete -f batch/gameserver-deployment.yaml
+```
+
+删除GKE集群:
+
+```bash
 gcloud container clusters delete gke-gaming-analytics-demo
+```
+
+删除Cloud Logging Sink:
+
+```bash
 gcloud logging sinks delete sink-gaming-analytics
+```
+
+删除Dataflow任务：
+
+```bash
 export job_id=`gcloud dataflow jobs list --region=us-central1 --status=active --filter="name=job-gaming-analytics" | tail -n 1 | cut -f 1 -d " "`
 gcloud dataflow jobs cancel $job_id --region=us-central1
+```
+
+删除Pub/Sub Topic：
+
+```bash
 gcloud pubsub topics delete projects/${project_id}/topics/gaming-analytics-topic
+```
+
+删除BigQuery数据集：
+
+```bash
 bq rm -r -f -d ${project_id}:gaming_analytics
+```
+
+删除创建的服务账号：
+
+```bash
 gcloud iam service-accounts delete gaming-analytics-demo@${project_id}.iam.gserviceaccount.com
+```
+
+删除容器镜像：
+
+```bash
 gcloud container images delete gcr.io/${project_id}/fluent-bit:1.8
 gcloud container images delete gcr.io/${project_id}/gameserver:0.2
 gcloud container images delete gcr.io/${project_id}/simulator:0.3
