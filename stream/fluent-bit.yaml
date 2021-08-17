@@ -1,0 +1,5 @@
+steps:
+- name: 'gcr.io/cloud-builders/docker'
+  args: [ 'build', '-t', 'gcr.io/$PROJECT_ID/fluent-bit:1.8', '-f', 'Dockerfile.fluent-bit', '.' ]
+images:
+- 'gcr.io/$PROJECT_ID/fluent-bit:1.8'

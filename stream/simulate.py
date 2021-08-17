@@ -33,7 +33,7 @@ adid = str(uuid.uuid4())
 uid = str(uuid.uuid4())
 
 def get_event_name():
-	return random.choice(['login', 'logout', 'purchase', 'level_up', 'click_ad', 'first_install'])
+	return random.choice(['login', 'logout', 'purchase', 'level_up', 'click_ad', 'first_open'])
 
 def get_install_medium():
 	return random.choice(['Google', 'Facebook', 'Baidu', 'Tencent', 'Bytedance', 'Other'])
@@ -143,7 +143,7 @@ def get_event_parms(event_name):
 				}
 			}
 		]
-	elif(event_name == 'first_install'):
+	elif(event_name == 'first_open'):
 		parms = [
 			{
 				'key': 'install_date',
@@ -166,6 +166,7 @@ device = {
 	'category': device_category,
 	'mobile_brand_name': get_mobile_brand(device_category),
 	'advertising_id': adid,
+	'platform': random.choice(['Android','iOS']),
 	'language': random.choice(['zh-CN', 'en-US', 'zh-TW', 'zh-HK', 'fr-FR', 'es-ES', 'ko-KR', 'ja-JP'])
 }
 

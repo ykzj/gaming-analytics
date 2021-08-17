@@ -1,0 +1,76 @@
+[
+    {
+        "name": "event_date",
+        "type": "STRING",
+        "mode": "REQUIRED"
+    },
+    {
+        "name": "event_timestamp",
+        "type": "INTEGER",
+        "mode": "REQUIRED"
+    },
+    {
+        "name": "event_name",
+        "type": "STRING",
+        "mode": "REQUIRED"
+    },
+    {
+        "name": "event_parms",
+        "type": "RECORD",
+        "mode": "REPEATED",
+        "fields": [
+            {
+                "name": "key",
+                "type": "STRING"
+            },
+            {
+                "name": "value",
+                "type": "RECORD",
+                "fields": [
+                    {
+                        "name": "string_value",
+                        "type": "STRING"
+                    },
+                    {
+                        "name": "float_value",
+                        "type": "FLOAT"
+                    },
+                    {
+                        "name": "int_value",
+                        "type": "INTEGER"
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "name": "user_id",
+        "type": "STRING"
+    },
+    {
+        "name": "device",
+        "type": "RECORD",
+        "fields": [
+            {
+                "name": "category",
+                "type": "STRING"
+            },
+            {
+                "name": "mobile_brand_name",
+                "type": "STRING"
+            },
+            {
+                "name": "advertising_id",
+                "type": "STRING"
+            },
+            {
+                "name": "platform",
+                "type": "STRING"
+            },
+            {
+                "name": "language",
+                "type": "STRING"
+            }
+        ]
+    }
+]
