@@ -9,11 +9,11 @@
 3. 分析系统：对数据进行ETL，将不同类型的数据处理后存放至不同类型的数据存储，计算汇总信息
 4. 展现模块：根据业务关心的指标制作图表，可视化展现数据结果
 
-![](images/01.png)
+![](https://github.com/ykzj/gaming-analytics/blob/main/images/01.png?raw=true)
 
 ## 2. GCP架构
 为了演示如何在GCP进行游戏数据分析，设计了一个简单的架构用于展示如何从游戏客户端采集数据，如何将数据实时发送至服务端，如何实时存储和处理数据并进行可视化展现。
-![](images/02.png)
+![](https://github.com/ykzj/gaming-analytics/blob/main/images/02.png?raw=true)
 
 此架构包含两类数据的采集和处理：用户事件的实时处理和日志的批量处理。
 
@@ -40,7 +40,7 @@ cd gaming-analytics
 ```
 
 repo中目录结构如下图:
-![](images/03.png)
+![](https://github.com/ykzj/gaming-analytics/blob/main/images/03.png?raw=true)
 
 如果在Cloud Shell中运行，可以通过以下命令打开交互式向导：
 
@@ -174,7 +174,7 @@ bq mk \
 ### 3.7 创建Dataflow任务
 
 Dataflow用于消费Pub/Sub数据后存入BigQuery，得益于Dataflow自带的Pub/Sub Topic to BigQuery任务模版，我们只需要从模版创建任务即可，不需要自己写代码来实现,只需要创建一个存储桶用于任务执行的临时存储。此任务的DAG如下图：
-![](images/04.png)
+![](https://github.com/ykzj/gaming-analytics/blob/main/images/04.png?raw=true)
 
 执行下列命令：
 ```bash
@@ -216,7 +216,7 @@ kubectl delete -f batch/gameserver-deployment.yaml
 删除GKE集群:
 
 ```bash
-gcloud container clusters delete gke-gaming-analytics-demo
+gcloud container clusters delete gke-gaming-analytics-demo --zone=us-central1-c
 ```
 
 删除Cloud Logging Sink:
@@ -229,7 +229,7 @@ gcloud logging sinks delete sink-gaming-analytics
 
 ```bash
 export job_id=`gcloud dataflow jobs list --region=us-central1 --status=active --filter="name=job-gaming-analytics" | tail -n 1 | cut -f 1 -d " "`
-gcloud dataflow jobs cancel $job_id --region=us-central1
+gcloud dataflow jobs cancel ${job_id} --region=us-central1
 ```
 
 删除Pub/Sub Topic：
