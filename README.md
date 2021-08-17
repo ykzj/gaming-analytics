@@ -35,6 +35,7 @@
 本demo采用容器化技术，将用户事件模拟器和服务器模拟器都封装成为容器，并以K8S技术对容器进行编排。先将repo代码pull到本地
 
 ```shell
+export project_id=`gcloud config get-value project`
 git pull https://github.com/ykzj/gaming-analytics.git
 cd gaming-analytics
 ```
@@ -93,8 +94,6 @@ docker push gcr.io/${project_id}/fluent-bit:1.8
 接下来创建一个[GKE](https://cloud.google.com/kubernetes-engine) 集群，用来运行用户事件模拟器和服务器日志模拟器。用户事件模拟器将模拟事件发送到Pub/Sub服务，服务器日志模拟机将日志发送到Cloud Logging服务，因此需要先创建一个服务账号，并授予Pub/Sub服务和Cloud Logging服务的权限。
 
 ```shell
-export project_id=`gcloud config get-value project`
-
 gcloud iam service-accounts create gaming-analytics-demo \
             --display-name="Gaming Analytics Demo"
 
