@@ -227,9 +227,11 @@ gcloud logging sinks delete sink-gaming-analytics
 
 删除Dataflow任务：
 注意：第一条命令无法正常在Cloud Shell中复制粘贴，请手动拷贝第一条命令到Cloud Shell中执行
+
 ```shell
 export job_id=`gcloud dataflow jobs list --region=us-central1 --status=active --filter="name=job-gaming-analytics" | tail -n 1 | cut -f 1 -d " "`
 ```
+执行完上面的命令后，再执行下面的命令：
 ```bash
 gcloud dataflow jobs cancel ${job_id} --region=us-central1
 ```
