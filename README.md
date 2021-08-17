@@ -123,7 +123,7 @@ gcloud projects add-iam-policy-binding ${project_id} \
 
  创建好服务账号之后，创建一个新的GKE集群，并给node赋予新建的服务账号:
 ```bash
-gcloud beta container --project ${project_id} clusters create "gke-gaming-analytics-demo" --zone "us-central1-c" --no-enable-basic-auth --cluster-version "1.19.12-gke.2100" --release-channel "stable" --machine-type "e2-medium" --image-type "COS_CONTAINERD" --disk-type "pd-standard" --disk-size "100" --metadata disable-legacy-endpoints=true --service-account "gaming-analytics-demo@${project_id}.iam.gserviceaccount.com" --max-pods-per-node "110" --num-nodes "3" --enable-stackdriver-kubernetes --enable-ip-alias --network "projects/${project_id}/global/networks/default" --subnetwork "projects/${project_id}/regions/us-central1/subnetworks/default" --no-enable-intra-node-visibility --default-max-pods-per-node "110" --enable-autoscaling --min-nodes "0" --max-nodes "10" --no-enable-master-authorized-networks --addons HorizontalPodAutoscaling,HttpLoadBalancing,GcePersistentDiskCsiDriver --enable-autoupgrade --enable-autorepair --max-surge-upgrade 2 --max-unavailable-upgrade 0 --enable-shielded-nodes --node-locations "us-central1-c"
+gcloud beta container --project ${project_id} clusters create "gke-gaming-analytics-demo" --zone "us-central1-c" --no-enable-basic-auth --cluster-version "1.19.12-gke.2100" --release-channel "stable" --machine-type "n2d-standard-4" --image-type "COS_CONTAINERD" --disk-type "pd-standard" --disk-size "100" --metadata disable-legacy-endpoints=true --service-account "gaming-analytics-demo@${project_id}.iam.gserviceaccount.com" --max-pods-per-node "110" --preemptible --num-nodes "3" --enable-stackdriver-kubernetes --enable-ip-alias --network "projects/${project_id}/global/networks/default" --subnetwork "projects/${project_id}/regions/us-central1/subnetworks/default" --no-enable-intra-node-visibility --default-max-pods-per-node "110" --enable-autoscaling --min-nodes "0" --max-nodes "250" --no-enable-master-authorized-networks --addons HorizontalPodAutoscaling,HttpLoadBalancing,GcePersistentDiskCsiDriver --enable-autoupgrade --enable-autorepair --max-surge-upgrade 2 --max-unavailable-upgrade 0 --enable-shielded-nodes --node-locations "us-central1-c"
 ```
 
 等待几分钟，GKE集群创建好后，获取身份验证以便与集群交互：
@@ -140,7 +140,7 @@ kubectl get node
 gcloud pubsub topics create gaming-analytics-topic
 ```
 ### 3.5 部署应用到GKE
-接下来可以开始部署用户事件模拟器和服务器日志模拟器到GKE集群，注意：在部署前调整yaml文件配置以匹配project id、Pub/Sub topic等设置。
+接下来可以开始部署用户事件模拟器和服务器日志模拟器到GKE集群，** 注意：在部署前调整yaml文件配置以匹配project id、Pub/Sub topic等设置。
 ```bash
 cd ..
 kubectl create -f stream/simulator-deployment.yaml
@@ -202,7 +202,74 @@ bigquery.googleapis.com/projects/${project_id}/datasets/gaming_analytics \
 
 命令完成后，会在BigQuery的gaming_analytics数据集下自动创建一张表，用来存放服务器日志信息
 
-## 4. 清理
+## 4. 自动扩展
+
+为了验证数据分析pipeline的自动扩展能力，我们可以调整用户事件模拟器和服务器日志模拟器的replicas数量，每个replica对应一个用户或一台服务器。除了Dataflow和Pub/Sub服务能自动扩展外，运行模拟器的GKE集群也可以自动扩展。
+
+### 4.1 扩展用户事件模拟器
+
+通过修改stream目录下的simulator-deployment.yaml文件中replicas的值，我们就可以扩展用户事件模拟器的数量。
+```bash
+vi stream/simulator-deployment.yaml
+```
+
+初始值为1，为了模拟10000个并发用户，我们将replicas的值修改为10000后保存，然后更新deployment：
+```bash
+kubectl apply -f stream/simulator-deployment.yaml
+```
+为了验证deployment下的pod数量达到预期，通过kubectl get po命令获得pod信息：
+
+```bash
+kubectl get po
+```
+等pod数量扩展完成后再运行一段时间（等待一杯咖啡的时间），便可去Cloud Console的Dataflow服务页面下，查看 Dataflow任务的节点扩展情况。
+
+### 4.2 扩展服务器日志模拟器
+
+当用户增加后，后端服务器的数量也会相应增加。通过修改batch目录下的gameserver-deployment.yaml文件中replicas的值，我们就可以扩展用户事件模拟器的数量。
+
+```bash
+vi batch/gameserver-deployment.yaml
+```
+
+初始值为1，为了模拟1000台后端服务器，我们将replicas的值修改为1000后保存，然后更新deployment：
+
+```bash
+kubectl apply -f batch/gameserver-deployment.yaml
+```
+
+为了验证deployment下的pod数量达到预期，通过kubectl get po命令获得pod信息：
+
+```bash
+kubectl get po
+```
+
+等pod数量扩展完成后再运行一段时间（等待一杯咖啡的时间），Cloud Logging的Sink会自动扩展处理能力，将服务器产生的日志信息导出到BigQuery。
+
+### 4.3 减少负载
+
+为了模拟用户请求随着时间而变化的过程，我们减少用户事件模拟器和服务器日志模拟器的yaml文件中replicas的值，除了pod会随之减少之外，GKE的node数量也会随之减少，随之Cloud Logging Sink和Dataflow Job的处理能力也会收缩。
+
+修改用户事件模拟器replicas数量：
+```bash
+vi stream/simulator-deployment.yaml
+```
+```bash
+kubectl apply -f stream/simulator-deployment.yaml
+```
+修改服务器日志模拟器replicas数量：
+```bash
+vi batch/gameserver-deployment.yaml
+```
+```bash
+kubectl apply -f batch/gameserver-deployment.yaml
+```
+
+调整完后等待一段时间，观察各个服务收缩的情况。
+
+
+
+## 5. 清理
 
 为了避免产生额外的费用，实验完成后请删除实验过程中创建的资源：
 
@@ -216,7 +283,7 @@ kubectl delete -f batch/gameserver-deployment.yaml
 删除GKE集群:
 
 ```bash
-gcloud container clusters delete gke-gaming-analytics-demo --zone=us-central1-c
+gcloud container clusters delete gke-gaming-analytics-demo --zone=us-central1-c --async
 ```
 
 删除Cloud Logging Sink:
