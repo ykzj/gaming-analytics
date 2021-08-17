@@ -228,7 +228,7 @@ gcloud logging sinks delete sink-gaming-analytics
 删除Dataflow任务：
 
 ```bash
-export job_id=`gcloud dataflow jobs list --region=us-central1 --status=active --filter="name=job-gaming-analytics" | tail -n 1 | cut -f 1 -d " "`
+export job_id=`gcloud dataflow jobs list --region=us-central1 --status=active --filter="name=job-gaming-analytics" | tail -n 1 | cut -f 1 -d ' '`
 gcloud dataflow jobs cancel ${job_id} --region=us-central1
 ```
 
