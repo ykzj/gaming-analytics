@@ -34,10 +34,10 @@
 ## 安装部署
 本demo采用容器化技术，将用户事件模拟器和服务器模拟器都封装成为容器，并以K8S技术对容器进行编排。先将repo代码pull到本地
 
-```shell
-export project_id=`gcloud config get-value project`
-git pull https://github.com/ykzj/gaming-analytics.git
+```bash
+git clone https://github.com/ykzj/gaming-analytics.git
 cd gaming-analytics
+export project_id=`gcloud config get-value project`
 ```
 
 repo中目录结构如下图:
@@ -47,7 +47,7 @@ repo中目录结构如下图:
 
 stream目录中包含用户事件模拟器及对应的yaml文件，部署之前先通过Dockerfile生成容器镜像
 
-```shell
+```bash
 cd stream
 gcloud builds submit --tag gcr.io/${project_id}/simulator:0.3
 ```
@@ -58,7 +58,7 @@ gcloud builds submit --tag gcr.io/${project_id}/simulator:0.3
 
 构建好容器镜像之后，push到[Container Registry](https://cloud.google.com/container-registry) 中
 
-```shell
+```bash
 gcloud auth configure-docker
 docker build -t simulator .
 docker tag simulator gcr.io/${project_id}/somulator:0.3
@@ -68,7 +68,7 @@ docker push gcr.io/${project_id}/somulator:0.3
 ### 服务器日志模拟器
 
 batch目录中包含服务器日志模拟器及对应的yaml文件，部署之前先通过Dockerfile生成容器镜像
-```shell
+```bash
 cd ../batch
 gcloud builds submit --config=gameserver.yaml
 gcloud builds submit --config=fluent-bit.yaml
@@ -79,7 +79,7 @@ gcloud builds submit --config=fluent-bit.yaml
 
 构建好容器镜像之后，push到[Container Registry](https://cloud.google.com/container-registry) 中
 
-```shell
+```bash
 docker build -t gameserver -f Dockerfile.gameserver .
 docker build -t fluent-bit -f Dockerfile.fluent-bit .
 docker tag gameserver gcr.io/${project_id}/gameserver:0.2
@@ -93,7 +93,7 @@ docker push gcr.io/${project_id}/fluent-bit:1.8
 
 接下来创建一个[GKE](https://cloud.google.com/kubernetes-engine) 集群，用来运行用户事件模拟器和服务器日志模拟器。用户事件模拟器将模拟事件发送到Pub/Sub服务，服务器日志模拟机将日志发送到Cloud Logging服务，因此需要先创建一个服务账号，并授予Pub/Sub服务和Cloud Logging服务的权限。
 
-```shell
+```bash
 gcloud iam service-accounts create gaming-analytics-demo \
             --display-name="Gaming Analytics Demo"
 
@@ -111,27 +111,27 @@ gcloud projects add-iam-policy-binding ${project_id} \
 ```
 
  创建好服务账号之后，创建一个新的GKE集群，并给node赋予新建的服务账号:
-```shell
+```bash
 gcloud beta container --project ${project_id} clusters create "gke-gaming-analytics-demo" --zone "us-central1-c" --no-enable-basic-auth --cluster-version "1.19.12-gke.2100" --release-channel "stable" --machine-type "e2-medium" --image-type "COS_CONTAINERD" --disk-type "pd-standard" --disk-size "100" --metadata disable-legacy-endpoints=true --service-account "gaming-analytics-demo@${project_id}.iam.gserviceaccount.com" --max-pods-per-node "110" --num-nodes "3" --enable-stackdriver-kubernetes --enable-ip-alias --network "projects/${project_id}/global/networks/default" --subnetwork "projects/${project_id}/regions/us-central1/subnetworks/default" --no-enable-intra-node-visibility --default-max-pods-per-node "110" --enable-autoscaling --min-nodes "0" --max-nodes "10" --no-enable-master-authorized-networks --addons HorizontalPodAutoscaling,HttpLoadBalancing,GcePersistentDiskCsiDriver --enable-autoupgrade --enable-autorepair --max-surge-upgrade 2 --max-unavailable-upgrade 0 --enable-shielded-nodes --node-locations "us-central1-c"
 ```
 
 等待几分钟，GKE集群创建好后，获取身份验证以便与集群交互：
-```shell
+```bash
 gcloud container clusters get-credentials gke-gaming-analytics-demo
 ```
 通过下列命令验证kubectl命令行能正常获取集群信息：
-```shell
+```bash
 kubectl get po
 kubectl get node
 ```
 ### 创建Cloud Pub/Sub Topic
 在部署应用到GKE之前，还需要先创建一个Cloud Pub/Sub Topic用来接收用户事件模拟器的模拟事件：
-```shell
+```bash
 gcloud pubsub topics create gaming-analytics-topic
 ```
 ### 部署应用到GKE
 接下来可以开始部署用户事件模拟器和服务器日志模拟器到GKE集群，注意：在部署前调整yaml文件配置以匹配project id、Pub/Sub topic等设置。
-```shell
+```bash
 cd ..
 kubectl create -f stream/simulator-deployment.yaml
 kubectl create -f batch/gameserver-deployment.yaml
@@ -143,7 +143,7 @@ kubectl create -f batch/gameserver-deployment.yaml
 
 通过bq命令行工具来创建一个数据集，用于存储用户事件和服务器日志：
 
-```shell
+```bash
 bq --location=US mk -d \
 --default_table_expiration 3600 \
 --description "Gaming Analytics demo dataset." \
@@ -151,7 +151,7 @@ gaming_analytics
 ```
 
 创建一张表用于存储具体内容，用于存储用户事件的events表的schema定义文件在stream目录下：
-```shell
+```bash
 bq mk \
   --table \
   --expiration 3600 \
@@ -166,14 +166,14 @@ Dataflow用于消费Pub/Sub数据后存入BigQuery，得益于Dataflow自带的P
 ![](images/04.png)
 
 执行下列命令：
-```shell
+```bash
 gsutil mb gs://${project_id}
 
 gcloud dataflow jobs run job-gaming-analytics --gcs-location gs://dataflow-templates-us-central1/latest/PubSub_to_BigQuery --region us-central1 --staging-location gs://${project_id}/temp --parameters inputTopic=projects/${project_id}/topics/gaming-analytics-topic,outputTableSpec=${project_id}:gaming_analytics.events
 ```
 
 等待job创建完成后，通过bq命令行查询events表以获取结果
-```shell
+```bash
 bq query --use_legacy_sql=false \
 'SELECT
   *
@@ -187,7 +187,7 @@ LIMIT 10'
 ### 存储服务器日志到BigQuery
 
 服务器日志模拟器生成的模拟日志已经自动发送到Cloud Logging中，接下来我们创建一个sink:
-```shell
+```bash
 gcloud logging sinks create sink-gaming-analytics \
 bigquery.googleapis.com/projects/${project_id}/datasets/gaming_analytics \
 --log-filter='resource.type="k8s_container" resource.labels.cluster_name="gke-gaming-analytics-demo" resource.labels.namespace_name="default" resource.labels.container_name="fluent-bit"'
@@ -198,7 +198,7 @@ bigquery.googleapis.com/projects/${project_id}/datasets/gaming_analytics \
 ## 清理
 
 为了避免产生额外的费用，实验完成后请删除实验过程中创建的资源：
-```shell
+```bash
 kubectl delete -f stream/simulator-deployment.yaml
 kubectl delete -f batch/gameserver-deployment.yaml
 gcloud container clusters delete gke-gaming-analytics-demo
