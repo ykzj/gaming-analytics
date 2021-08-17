@@ -132,10 +132,9 @@ gcloud pubsub topics create gaming-analytics-topic
 ### 部署应用到GKE
 接下来可以开始部署用户事件模拟器和服务器日志模拟器到GKE集群，注意：在部署前调整yaml文件配置以匹配project id、Pub/Sub topic等设置。
 ```shell
-cd ../stream
-kubectl create -f simulator-deployment.yaml
-cd ../batch
-kubectl create -f gameserver-deployment.yaml
+cd ..
+kubectl create -f stream/simulator-deployment.yaml
+kubectl create -f batch/gameserver-deployment.yaml
 ```
 
 如果需要调整模拟器的数量，请修改yaml文件中的对应设置。
@@ -151,16 +150,14 @@ bq --location=US mk -d \
 gaming_analytics
 ```
 
-创建两张表用于存储具体内容，用于存储用户事件的events表的schema定义文件在stream目录下：
+创建一张表用于存储具体内容，用于存储用户事件的events表的schema定义文件在stream目录下：
 ```shell
-cd ../stream
-
 bq mk \
   --table \
   --expiration 3600 \
   --description "user events" \
   gaming_analytics.events \
-  event_table_schema.json
+  stream/event_table_schema.json
 ```
 
 ### 创建Dataflow任务
@@ -202,7 +199,6 @@ bigquery.googleapis.com/projects/${project_id}/datasets/gaming_analytics \
 
 为了避免产生额外的费用，实验完成后请删除实验过程中创建的资源：
 ```shell
-cd ..
 kubectl delete -f stream/simulator-deployment.yaml
 kubectl delete -f batch/gameserver-deployment.yaml
 gcloud container clusters delete gke-gaming-analytics-demo
