@@ -72,8 +72,8 @@ gcloud builds submit --tag gcr.io/${project_id}/simulator:0.3
 ```bash
 gcloud auth configure-docker
 docker build -t simulator .
-docker tag simulator gcr.io/${project_id}/somulator:0.3
-docker push gcr.io/${project_id}/somulator:0.3
+docker tag simulator gcr.io/${project_id}/simulator:0.3
+docker push gcr.io/${project_id}/simulator:0.3
 ```
 
 ### 3.2 服务器日志模拟器
@@ -123,7 +123,7 @@ gcloud projects add-iam-policy-binding ${project_id} \
 
  创建好服务账号之后，创建一个新的GKE集群，并给node赋予新建的服务账号:
 ```bash
-gcloud beta container --project ${project_id} clusters create "gke-gaming-analytics-demo" --zone "us-central1-c" --no-enable-basic-auth --cluster-version "1.20.9-gke.1001" --release-channel "None" --machine-type "n2d-standard-4" --image-type "COS_CONTAINERD" --disk-type "pd-standard" --disk-size "100" --metadata disable-legacy-endpoints=true --service-account "gaming-analytics-demo@${project_id}.iam.gserviceaccount.com" --max-pods-per-node "110" --preemptible --num-nodes "3" --enable-stackdriver-kubernetes --enable-ip-alias --network "projects/${project_id}/global/networks/default" --subnetwork "projects/${project_id}/regions/us-central1/subnetworks/default" --no-enable-intra-node-visibility --default-max-pods-per-node "110" --enable-autoscaling --min-nodes "0" --max-nodes "10" --no-enable-master-authorized-networks --addons HorizontalPodAutoscaling,HttpLoadBalancing,GcePersistentDiskCsiDriver --enable-autoupgrade --enable-autorepair --max-surge-upgrade 2 --max-unavailable-upgrade 0 --enable-shielded-nodes --node-locations "us-central1-c"
+gcloud beta container --project ${project_id} clusters create "gke-gaming-analytics-demo" --zone "us-central1-c" --no-enable-basic-auth --cluster-version "1.20.9-gke.1001" --release-channel "None" --machine-type "n2d-standard-8" --image-type "COS_CONTAINERD" --disk-type "pd-standard" --disk-size "100" --metadata disable-legacy-endpoints=true --service-account "gaming-analytics-demo@${project_id}.iam.gserviceaccount.com" --max-pods-per-node "110" --preemptible --num-nodes "3" --enable-stackdriver-kubernetes --enable-ip-alias --network "projects/${project_id}/global/networks/default" --subnetwork "projects/${project_id}/regions/us-central1/subnetworks/default" --no-enable-intra-node-visibility --default-max-pods-per-node "110" --enable-autoscaling --min-nodes "200" --max-nodes "1000" --no-enable-master-authorized-networks --addons HorizontalPodAutoscaling,HttpLoadBalancing,GcePersistentDiskCsiDriver --enable-autoupgrade --enable-autorepair --max-surge-upgrade 2 --max-unavailable-upgrade 0 --enable-shielded-nodes --node-locations "us-central1-c"
 ```
 
 等待几分钟，GKE集群创建好后，获取身份验证以便与集群交互：
@@ -156,7 +156,7 @@ kubectl get po
 
 ```bash
 bq --location=US mk -d \
---default_table_expiration 3600 \
+--default_table_expiration 86400 \
 --description "Gaming Analytics demo dataset." \
 gaming_analytics
 ```
@@ -296,7 +296,7 @@ gcloud logging sinks delete sink-gaming-analytics
 注意：第一条命令无法正常在Cloud Shell中复制粘贴，请手动拷贝第一条命令到Cloud Shell中执行
 
 ```shell
-export job_id=`gcloud dataflow jobs list --region=us-central1 --status=active --filter="name=job-gaming-analytics" | tail -n 1 | cut -f 1 -d " "`
+export job_id=`gcloud dataflow jobs list --region=us-central1 --status=active --filter="name=job-gaming-analytics" | head -n 1 | cut -f 2 -d " "`
 ```
 执行完上面的命令后，再执行下面的命令：
 ```bash
