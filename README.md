@@ -165,7 +165,7 @@ gaming_analytics
 ```bash
 bq mk \
   --table \
-  --expiration 3600 \
+  --expiration 86400 \
   --description "user events" \
   gaming_analytics.events \
   stream/event_table_schema.json
