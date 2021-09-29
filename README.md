@@ -51,7 +51,7 @@ teachme README.md
 首先，我们需要定义project_id这个环境变量，后面多处会用到，***重要***
 
 ```bash
-export project_id=`gcloud config get-value project`
+export project_id=\`gcloud config get-value project\`
 ```
 
 ### 3.1 用户事件模拟器
