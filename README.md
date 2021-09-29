@@ -32,9 +32,6 @@
 选择或创建一个项目
 <walkthrough-project-setup></walkthrough-project-setup>
 
-打开Cloud Shell
-<walkthrough-open-cloud-shell-button></walkthrough-open-cloud-shell-button>
-
 本demo采用容器化技术，将用户事件模拟器和服务器模拟器都封装成为容器，并以K8S技术对容器进行编排。先将repo代码pull到本地
 
 ```bash
