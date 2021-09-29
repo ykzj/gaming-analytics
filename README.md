@@ -1,6 +1,3 @@
-<walkthrough-project-setup>
-</walkthrough-project-setup>
-
 # GCP游戏分析解决方案
 ## 1. 概述
 常见的游戏分析系统架构如下图所示，一般会包含以下几个部分：
@@ -32,6 +29,9 @@
 对于服务器产生的日志，可以实时处理，也可以批量处理。通过在服务器上“侧加载”一个日志收集的组件，如flume或[fluent-bit](https://fluentbit.io/) ,便可将服务器日志传输到[Cloud Logging](https://cloud.google.com/logging) 服务，然后将日志路由至其他服务进行处理。
 
 ## 3. 安装部署
+选择或创建一个项目
+<walkthrough-project-setup></walkthrough-project-setup>
+
 本demo采用容器化技术，将用户事件模拟器和服务器模拟器都封装成为容器，并以K8S技术对容器进行编排。先将repo代码pull到本地
 
 ```bash
@@ -51,7 +51,7 @@ teachme README.md
 首先，我们需要定义project_id这个环境变量，后面多处会用到，***重要***
 
 ```bash
-export project_id=\`gcloud config get-value project\`
+export project_id=`gcloud config get-value project`
 ```
 
 ### 3.1 用户事件模拟器
