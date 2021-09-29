@@ -51,7 +51,7 @@ teachme README.md
 首先，我们需要定义project_id这个环境变量，后面多处会用到，***重要***
 
 ```bash
-export GOOGLE_CLOUD_PROJECT="{{project-id}}"
+export project_id="{{project-id}}"
 ```
 
 ### 3.1 用户事件模拟器
